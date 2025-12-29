@@ -72,7 +72,7 @@ SUBCARRIER_SPACING = 30e3  # 30 kHz
 # (each sample is a length 20 CSI sequence) can be obtained in one generation.
 # This value should be adjusted based on the system's CPU memory capacity.
 # a sample is 20 slots * 32 antennas * 750 subcarriers
-BATCH_SIZE = 10
+BATCH_SIZE = 2
 BATCH_SIZE_DEBUG = 2  # 2 for debug
 
 # Number of training samples to generate for each scenario
