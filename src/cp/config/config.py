@@ -360,7 +360,7 @@ if __name__ == "__main__":
     import argparse
     from pathlib import Path
 
-    from src.utils.data_utils import NUM_SUBCARRIERS, PRED_LEN
+    from src.utils.data_utils import HIST_LEN, NUM_SUBCARRIERS, PRED_LEN
 
     parser = argparse.ArgumentParser(description="Experiment configuration management")
     parser.add_argument("--model", "-m", type=str, default="RNN", help="Model name")
@@ -390,6 +390,18 @@ if __name__ == "__main__":
             "rnn_hidden_dim": NUM_SUBCARRIERS * 4,
             "rnn_num_layers": 4,
             "pred_len": PRED_LEN,
+        }
+
+    elif model_name == "CNN":
+        config.model.name = f"{model_name}_{scenario}"
+        config.model.is_separate_antennas = True
+        config.model.checkpoint_path = None
+        config.model.params = {
+            "num_subcarriers": NUM_SUBCARRIERS,
+            "pred_len": PRED_LEN,
+            "hist_len": HIST_LEN,
+            "cnn_hidden_dims": [32, 64, 128],
+            "mlp_hidden_dim": 512,
         }
 
     else:
