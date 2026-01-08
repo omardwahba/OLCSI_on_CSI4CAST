@@ -50,14 +50,17 @@ def check_overlap(H_hist: torch.Tensor, n_checks: int = 5) -> bool:
 
     hist_len = H_hist.shape[2]
     num_pairs = min(len(H_hist) - 1, n_checks)
-
+    print(H_hist[0,0,:,:10])
+    print("--------------------------------")
+    print(H_hist[1,0,:,:10])
+    return False
     for i in range(num_pairs):
         a = H_hist[i]
         b = H_hist[i + 1]
         # a shape: [antennas, hist_len, subcarriers]
         for k in range(1, hist_len):
-            a_tail = a[:, -k:, :]
-            b_head = b[:, :k, :]
+            a_tail = a[0, -k:, :]
+            b_head = b[0, :k, :]
             if torch.equal(a_tail, b_head):
                 print(f"Overlap detected between sample {i} and {i+1} with k={k}")
                 return True
@@ -113,7 +116,7 @@ def inspect_datamodule(dir_data: Path, is_U2D: bool, batch_size: int = 4, shuffl
     # get shapes via helper
     hist_shape, pred_shape = dm.get_data_shapes()
     print(f"  Collated batch shapes from dataloader: hist={hist_shape}, pred={pred_shape}")
-
+    print(f"  (Data type) Collated batch shapes from dataloader: hist={hist_shape}, pred={pred_shape}")
     # show dataloader config (shuffle flag)
     loader = dm.train_dataloader()
     print(f"  DataLoader shuffle flag (will shuffle each epoch): {data_cfg.shuffle}")

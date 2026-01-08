@@ -98,8 +98,8 @@ Below are the concrete steps for the three phases of your project. Each phase li
 ### Phase Two — Model creation (CNN + MLP) 🧱
 
 **Goal:** Implement a compact CNN model that balances good performance with a small number of parameters. Model architecture (high-level):
-- Conv2D(32, kernel=3) → MaxPool2D
-- Conv2D(64, kernel=3) → MaxPool2D → BatchNorm
+- Conv2D(32, kernel=3) → BatchNorm -> MaxPool2D
+- Conv2D(64, kernel=3) → MaxPool2D 
 - Conv2D(128, kernel=3) → MaxPool2D → Flatten
 - Two-stage MLP that reshapes the flattened vector into the required output image shape:
   - MLP width constructor: reshape to [batch, antennas?, time?, width=subcarriers]
@@ -133,9 +133,9 @@ Below are the concrete steps for the three phases of your project. Each phase li
 
 ### Phase Three — Online training & evaluation ⚡
 
-**Goal:** Train the model in an online fashion (update every batch, batch size 2), ensure FDD evaluation, and report both prediction performance (NMSE, SE) and computational metrics (FLOPs, per-sample training time, per-sample inference time).
+**Goal:** Train the model in an online fashion (update every batch, batch size 1), ensure FDD evaluation, and report both prediction performance (NMSE, SE) and computational metrics (FLOPs, per-sample training time, per-sample inference time).
 
-**Core artifact:** Implement **all Phase 3 code in a single script**: `src/testing/online_test.py` (CLI entry point). This script will (1) run online training, (2) measure FLOPs and timings, and (3) evaluate performance on the regular FDD test set.
+**Core artifact:** Implement **all Phase 3 code in a single script**: `online_csi/online_test.py` (CLI entry point). This script will (1) run online training, (2) measure FLOPs and timings, and (3) evaluate performance on the regular FDD test set. The script needs to use the existing testing script provided, so make sure output data is as expected.
 
 **Design & responsibilities of `online_test.py`:**
 - CLI arguments (examples):

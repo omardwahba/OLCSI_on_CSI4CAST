@@ -15,6 +15,7 @@ Usage:
 
 from src.cp.models.baseline_models.np import NOPREDICTMODEL
 from src.cp.models.baseline_models.rnn import RNN_pl
+from src.cp.models.cnn_online import CNNOnline
 
 
 class PREDICTORS:
@@ -33,3 +34,7 @@ class PREDICTORS:
     # Neural network models
     RNN_FDD = RNN_pl
     RNN_TDD = RNN_pl
+
+    # CNN models
+    CNN_FDD = CNNOnline
+    CNN_TDD = CNNOnline
