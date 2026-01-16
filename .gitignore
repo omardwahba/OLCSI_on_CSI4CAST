@@ -222,4 +222,4 @@ __marimo__/
 
 # Ignore data for now before generating the original - only debug now
 z_artifacts/
-
+online_csi/output

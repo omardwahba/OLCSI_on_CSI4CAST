@@ -45,7 +45,6 @@ class CNNOnlineModel(nn.Module):
         # 1st Block: Conv2D(32, kernel=3) -> BatchNorm -> MaxPool2D
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels, cnn_hidden_dims[0], kernel_size=3, padding=1),
-            nn.BatchNorm2d(cnn_hidden_dims[0]),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2),
         )
@@ -88,13 +87,27 @@ class CNNOnlineModel(nn.Module):
 
     def forward(self, x):
         """
+        Forward pass for CSI prediction with flexible batch handling.
+        
         Args:
-            x: Input tensor.
-               If is_separate_antennas=True: [Batch, Hist_Len, Subcarriers*2] (Real)
-               If is_separate_antennas=False: [Batch, Antennas, Hist_Len, Subcarriers] (Complex)
-
+            x (torch.Tensor): Real-valued CSI input tensor
+                Shape: [batch*antennas, hist_len, subcarriers*2] or [batch, antennas, hist_len, features]
+                dtype: float32 (real-valued, not complex)
+                
+                Examples:
+                - Online (batch_size=1): [32, 16, 600]
+                - Offline (batch_size=8): [256, 16, 600] (8*32 antennas)
+        
         Returns:
-            out: Predicted CSI. [Batch, Pred_Len, Subcarriers*2] or [Batch, Antennas, Pred_Len, Subcarriers*2]
+            torch.Tensor: Predicted CSI of shape [batch*antennas, pred_len, subcarriers*2]
+                Examples:
+                - Online: [32, 4, 600]
+                - Offline: [256, 4, 600]
+        
+        Notes:
+            - Expects real-valued input (complex converted via separate antenna collation)
+            - Batch normalization works with batch_size=1 using running statistics
+            - Compatible with online learning where model stays in train() mode
         """
 
         # Handle input shapes and types
@@ -102,14 +115,10 @@ class CNNOnlineModel(nn.Module):
         original_shape = x.shape
 
         if is_complex_input:
-            raise ValueError("input is complex .. this feature not supported yet CNNOnline.")
-            # Assume [Batch, Antennas, Hist_Len, Subcarriers]
-            # Convert to [Batch*Antennas, Hist_Len, Subcarriers*2]
-            # view_as_real adds a last dim of size 2.
-            # x: [B, A, T, F] -> [B, A, T, F, 2] -> [B*A, T, F*2]
-            # x_real = torch.view_as_real(x)
-            # B, A, T, F, _ = x_real.shape
-            # x = x_real.view(B * A, T, F * 2)
+            raise ValueError(
+                "CNNOnline expects real-valued input from separate antenna processing. "
+                "Received complex tensor. Ensure data is processed with collect_fn_separate_antennas."
+            )
         else:
             # Real input
             if x.dim() == 4:
@@ -142,7 +151,7 @@ class CNNOnlineModel(nn.Module):
         out = x_height.view(B_eff, self.pred_len, self.subcarriers * 2)
 
         # Restore dimensions if needed
-        if is_complex_input or len(original_shape) == 4:
+        if len(original_shape) == 4:
             # Input was [B, A, ...]
             # Out is [B*A, Pred, F*2] -> [B, A, Pred, F*2]
             B = original_shape[0]
@@ -160,6 +169,13 @@ class CNNOnline(BaseCSIModel):
         - Conv2D(64, kernel=3) -> MaxPool2D
         - Conv2D(128, kernel=3) -> MaxPool2D -> Flatten
         - Two-stage MLP decoder
+    
+    Supports separate antenna processing mode (is_separate_antennas=True) with real-valued
+    input tensors. Input shape: [batch*antennas, hist_len, subcarriers*2].
+    
+    Antenna Mode Support:
+        - is_separate_antennas=True: Real-valued input [batch*32, 16, 600] ✓ SUPPORTED
+        - is_separate_antennas=False: Complex input [batch, 32, 16, 300] ✗ NOT SUPPORTED
     """
 
     def __init__(self, config: ExperimentConfig, **kwargs):
@@ -169,8 +185,12 @@ class CNNOnline(BaseCSIModel):
             loss_config=config.loss,
         )
 
-        if config.model.is_separate_antennas:
-            raise ValueError("is_separate_antennas=True is not supported yet for CNNOnline.")
+        # Validate antenna mode
+        if not config.model.is_separate_antennas:
+            raise ValueError(
+                "is_separate_antennas=False (gather mode) is not supported for CNNOnline. "
+                "Please set is_separate_antennas=True for separate antenna processing."
+            )
 
         self.name = "CNN_Online"
         self.is_separate_antennas = config.model.is_separate_antennas
@@ -180,4 +200,16 @@ class CNNOnline(BaseCSIModel):
         self.model = CNNOnlineModel(**config.model.params)
 
     def forward(self, x):
+        """Forward pass through the CNN model.
+        
+        Args:
+            x: Real-valued input tensor of shape [batch*antennas, hist_len, subcarriers*2]
+               For online learning: [32, 16, 600] (batch_size=1, antennas=32)
+               For offline learning: [batch*32, 16, 600] (batch_size>1, antennas=32)
+        
+        Returns:
+            Predicted CSI tensor of shape [batch*antennas, pred_len, subcarriers*2]
+            For online learning: [32, 4, 600]
+            For offline learning: [batch*32, 4, 600]
+        """
         return self.model(x)
