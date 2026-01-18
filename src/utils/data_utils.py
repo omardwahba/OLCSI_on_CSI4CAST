@@ -80,7 +80,7 @@ NUM_REPEAT_TRAIN = 1000
 NUM_REPEAT_TRAIN_DEBUG = 2  # 2 for debug
 
 # Number of testing samples to generate for each scenario
-NUM_REPEAT_TEST = 100
+NUM_REPEAT_TEST = 500
 NUM_REPEAT_TEST_DEBUG = 2  # 2 for debug
 
 HIST_LEN = 16  # 16 slots historical csi for model input
